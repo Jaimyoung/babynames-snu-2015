@@ -1,0 +1,54 @@
+---
+title: "아기 이름 자료 분석"
+author: "권재명"
+date: "2015년 8월 26일"
+output:
+  html_document: default
+  pdf_document:
+    latex_engine: xelatex
+mainfont: NanumGothic
+---
+
+# 자료 수집
+아기이름 자료를 분석해보자.
+원자료는 다음에서 다운받는다.
+<http://www.ssa.gov/oact/babynames/limits.html>
+자료의 준비와 전처리는 다음 리포지토리를 참조하도록 하자.
+
+다운받은 자료를 data 디렉토리에 풀은 후 다음처럼 읽어들이자.
+
+```{r message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+```
+
+```{r cache=TRUE}
+data = fread("onefile.txt", header=FALSE, data.table = FALSE)
+head(data)
+str(data)
+names(data) = c('year', 'name', 'gender', 'n')
+```
+
+
+```{r}
+# 매 해 가장 인기있던 이름
+d1 = data %>% group_by(year, gender) %>% top_n(1, n)
+ggplot(d1, aes(year, n, label=name, color=name)) +
+  geom_point() + geom_text()
+
+# 매 해 남아/여아 이름 갯수
+d2 = data %>% group_by(year, gender) %>% summarize(n_names = n())
+ggplot(d2, aes(year, n_names, col=gender)) + geom_point()
+
+# 매 해 인구수
+d3 = data %>% group_by(year, gender) %>% summarize(pop = sum(n))
+ggplot(d3, aes(year, pop, col=gender)) + geom_point()
+
+# 인구수당 이름 갯수
+(d4 = as.data.table(merge(d3, d2)))
+d4 = d4 %>% mutate(names_per_pop = n_names / pop)
+ggplot(d4, aes(year, names_per_pop, col=gender)) + geom_point()
+
+```
+
